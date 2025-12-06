@@ -1,12 +1,3 @@
-/* Loads a C++ WASI implementation.
-
-Each Wasi object (obtained with `startWasi()`) can only be used to provide imports for a single other module.  Once it's been created, it needs to be bound to that module's memory using `bindToOtherMemory()`.
-
-However, you can use the same WASI context for multiple other instances, by creating copies with `copyForRebinding()` (on the same thread), or `initObj()` when passing to a Worker/Worklet (which then gets passed to `startWasi()`.
-
-If the browser is not cross-origin isolated, `initObj()` will pass the WebAssembly module across (to avoid re-fetching) but the WASI contexts will not be shared.
-*/
-
 function fillWasiFromInstance(instance, wasiImports) {
 	// Collect WASI methods by matching `{group}__{method}` exports
 	for (let name in instance.exports) {
@@ -61,7 +52,6 @@ class Wasi {
 	importObj = {};
 
 	constructor(config, singleThreadMemory) {
-
 		this.#config = config;
 		this.#memory = config.memory || singleThreadMemory;
 
@@ -134,14 +124,16 @@ class Wasi {
 	}
 	
 	initObj() {
-		let result = Object.assign({}, this.#config);
+		let result = Object.assign({
+			shared: !!this.#config.memory
+		}, this.#config);
 		return result;
 	}
 	
 	bindToOtherMemory(memory) {
 		this.#otherModuleMemory = memory;
 	}
-
+	
 	// Makes another instance, using the same memory (even if it's on the same thread)
 	async copyForRebinding() {
 		return new Wasi(this.#config, this.#memory).ready;
