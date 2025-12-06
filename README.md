@@ -16,7 +16,22 @@ There's an ES6 module `wasi.mjs` (or `wasi-bundled.mjs` which includes the WASM 
 
 The Wasi object obtained with `startWasi()` provides a `.importObj` property, which can be used to supply the imports for one other module.  You must bind to that module's memory using `bindToOtherMemory()` when it's available.
 
+```js
+let wasi = await startWasi();
+Object.assign(otherModuleImports, wasi.importObj);
+
+wasi.bindToOtherMemory(otherModuleMemory);
+```
+
 To use the same WASI context for multiple other instances, create copies with `.copyForRebinding()` (if on the same thread/context), or `.initObj()` when sending to a Worker/Worklet (and then pass it to `startWasi()`).  The difference is that `copyForRebinding()` always shares the same memory, but if the page isn't cross-origin isolated then `.initObj()` only includes the precompiled module, since the actual WASI context/data can't be shared in that case.
+
+```js
+let wasi2 = await wasi.copyForRebinding();
+Object.assign(module2Imports, wasi2.importObj);
+
+wasi2.bindToOtherMemory(module2Memory);
+// Both modules will now share the same WASI VFS
+```
 
 ## Development
 
