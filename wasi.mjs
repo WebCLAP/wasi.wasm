@@ -16,7 +16,17 @@ function fillWasiFromInstance(instance, wasiImports) {
 
 // Similar to above, but with an extra layer of indirection so we can do it before it's instantiated
 function fillWasiFromModuleExports(module, wasiImports) {
-	let instance = {exports:{}};
+	let instance = {exports:{
+		wasi32_snapshot_preview1__random_get(ptr, size) {
+			let randomBuffer = new BigUint64Array(Math.ceil(size/8));
+			for (let i = 0; i < randomBuffer.length; ++i) {
+				randomBuffer[i] = wasiImports.env.getRandom64();
+			}
+			let bytes = new Uint8Array(wasiImports.env.memory.buffer);
+			bytes.set(new Uint8Array(randomBuffer.buffer).subarray(0, size), ptr);
+			return 0;
+		}
+	}};
 	
 	// Collect WASI methods by matching `{group}__{method}`
 	WebAssembly.Module.exports(module).forEach(item => {
@@ -24,7 +34,7 @@ function fillWasiFromModuleExports(module, wasiImports) {
 		if (/^wasi32_/.test(name) && item.kind == 'function') {
 			let parts = name.split('__');
 			if (parts.length == 2) {
-				instance.exports[name] = (...args) => {
+				instance.exports[name] = instance.exports[name] || function(...args) {
 					console.error(`WASI: ${name} called before instance ready`, args);
 					return -1; // usually an error code
 				};
@@ -48,6 +58,7 @@ class Wasi {
 	#config;
 	#memory;
 	#otherModuleMemory;
+	#api;
 	
 	importObj = {};
 
@@ -101,14 +112,25 @@ class Wasi {
 				},
 				getRandom64() {
 					if (typeof crypto == 'object') {
-						return crypto.getRandomBytes(new BigUint64Array(1))[0];
+						return crypto.getRandomValues(new BigUint64Array(1))[0];
 					}
 					let v64 = 0n;
 					sha256(++shaCounter + seedString).forEach(v32 => {
 						v64 = v64*256n + BigInt(v32&0xFF);
 					});
 					return v64;
-				}
+				},
+				getClockResNs(clockId) {
+					return 2000; // 2ms
+				},
+				getClockMs(clockId) {
+					return Date.now();
+				},
+debug(a, b, c) {
+	globalThis.debugA = a;
+	globalThis.debugB = b;
+	globalThis.debugC = c;
+}
 			}
 		};
 		// Yes, we recursively pass its own WASI implementation back in, indirectly
@@ -119,6 +141,7 @@ class Wasi {
 			if (needsInit) instance.exports._initialize();
 			setWasiInstance(instance);
 			fillWasiFromInstance(instance, this.importObj);
+			this.#api = instance.exports;
 			return this;
 		})();
 	}
@@ -132,6 +155,23 @@ class Wasi {
 	
 	bindToOtherMemory(memory) {
 		this.#otherModuleMemory = memory;
+	}
+	
+	loadFiles(fileMap) {
+		for (let key in fileMap) {
+			let buffer = fileMap[key];
+			if (ArrayBuffer.isView(buffer)) buffer = buffer.buffer;
+
+			let ptr = this.#api.vfs_setPath(key.length);
+			let strBuffer = new Uint8Array(this.#memory.buffer, ptr);
+			for (let i = 0; i < key.length; ++i) {
+				strBuffer[i] = key.charCodeAt(i);
+			}
+			ptr = this.#api.vfs_createFile(buffer.byteLength);
+			if (!ptr) throw Error("invalid path");
+			let fileBuffer = new Uint8Array(this.#memory.buffer, ptr);
+			fileBuffer.set(new Uint8Array(buffer));
+		}
 	}
 	
 	// Makes another instance, using the same memory (even if it's on the same thread)
