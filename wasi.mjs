@@ -121,16 +121,14 @@ class Wasi {
 					return v64;
 				},
 				getClockResNs(clockId) {
-					return 2000; // 2ms
+					if (clockId == 0) {
+						return 2000; // 2ms
+					}
+					return 0;
 				},
 				getClockMs(clockId) {
 					return Date.now();
 				},
-debug(a, b, c) {
-	globalThis.debugA = a;
-	globalThis.debugB = b;
-	globalThis.debugC = c;
-}
 			}
 		};
 		// Yes, we recursively pass its own WASI implementation back in, indirectly

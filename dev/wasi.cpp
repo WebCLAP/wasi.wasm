@@ -26,9 +26,6 @@ extern double getClockMs(uint32_t clockId);
 __attribute__((import_module("env"), import_name("getClockResNs")))
 extern uint32_t getClockResNs(uint32_t clockId);
 
-__attribute__((import_module("env"), import_name("debug")))
-extern uint32_t debug(uint32_t a, uint32_t b, uint32_t c);
-
 // Pointer to remote memory
 template<class T>
 struct P32 {
@@ -264,7 +261,6 @@ void forEachIoVecFill(P32<const iovec32> ioBufferList, uint32_t ioBufferCount, F
 		auto vec = (ioBufferList + i).get();
 		if (!vec.length) continue;
 		iovecBuffer.resize(vec.length);
-debug(ioBufferCount, size_t(iovecBuffer.data()), iovecBuffer.size());
 		fn(iovecBuffer.data(), iovecBuffer.size());
 		memcpyToOther32(vec.buffer.remotePointer, iovecBuffer.data(), vec.length);
 	}
@@ -429,7 +425,6 @@ extern "C" {
 			if (handle.position + length > handle->fileContents.size()) {
 				length = handle->fileContents.size() - handle.position;
 			}
-debug(size_t(bytes), size_t(handle->fileContents.data() + handle.position), length);
 			std::memcpy(bytes, handle->fileContents.data() + handle.position, length);
 			handle.position += length;
 			total += length;

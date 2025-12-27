@@ -1,6 +1,6 @@
 cmake: cmake-build
 	cmake --build cmake-build --target wasi --config Release
-	node make-bundled.js
+	#node make-bundled.js
 
 cmake-build: CMakeLists.txt
 	@echo "Generating CMake project"
