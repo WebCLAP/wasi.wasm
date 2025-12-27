@@ -63,6 +63,7 @@ class Wasi {
 	importObj = {};
 
 	constructor(config, singleThreadMemory) {
+		config = Object.assign({}, config);
 		this.#config = config;
 		this.#memory = config.memory || singleThreadMemory;
 
@@ -131,7 +132,7 @@ class Wasi {
 				},
 			}
 		};
-		// Yes, we recursively pass its own WASI implementation back in, indirectly
+		// Yes, we recursively pass its own WASI implementation back in, indirectly - it should ever actually *use* these though
 		let setWasiInstance = fillWasiFromModuleExports(config.module, wasiImplImports);
 
 		this.ready = (async _ => {
