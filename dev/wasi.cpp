@@ -219,6 +219,7 @@ VfsNode * vfsGet(const std::string &path, bool createIfMissing=false) {
 }
 
 std::string pendingPath;
+static char dummyChar;
 extern "C" {
 	__attribute__((export_name("vfs_setPath")))
 	char * vfs_setPath(size_t size) {
@@ -234,7 +235,7 @@ extern "C" {
 		node->isDir = false;
 		node->dirContents.clear();
 		node->fileContents.resize(size);
-		return node->fileContents.data(); // The JS will fill this with the file data
+		return (size > 0) ? node->fileContents.data() : &dummyChar; // The JS will fill this with the file data
 	}
 }
 
