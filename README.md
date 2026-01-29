@@ -20,10 +20,13 @@ The Wasi object obtained with `startWasi()` provides a `.importObj` property, wh
 let wasi = await startWasi();
 Object.assign(otherModuleImports, wasi.importObj);
 
+// when available
 wasi.bindToOtherMemory(otherModuleMemory);
 ```
 
-To use the same WASI context for multiple other instances, create copies with `.copyForRebinding()` (if on the same thread/context), or `.initObj()` when sending to a Worker/Worklet (and then pass it to `startWasi()`).  The difference is that `copyForRebinding()` always shares the same memory, but if the page isn't cross-origin isolated then `.initObj()` only includes the precompiled module, since the actual WASI context/data can't be shared in that case.
+### Shared WASI
+
+To share the VFS/etc. with a new WASI-based module in the same JS context, you can create copies with `wasi.copyForRebinding()`:
 
 ```js
 let wasi2 = await wasi.copyForRebinding();
@@ -32,6 +35,19 @@ Object.assign(module2Imports, wasi2.importObj);
 wasi2.bindToOtherMemory(module2Memory);
 // Both modules will now share the same WASI VFS
 ```
+
+To share the same WASI setup on another Worker/Worklet, use `.initObj()` and then pass that to `.startWasi()` in the other context:
+
+```js
+// on existing thread
+let wasiInit = wasi.initObj();
+startMyWorker({wasiInit, ...});
+
+// in new Worker/Worklet
+let wasi = await startWasi(wasiInit);
+```
+
+The actual WASI data (e.g. VFS contents) will only be shared if the page is cross-origin isolated.  Otherwise, `.initObj()` only includes the precompiled module, but doesn't try to pass the shared memory across.
 
 ## Development
 
