@@ -70,7 +70,8 @@ class Wasi {
 		let needsInit = false;
 		if (!this.#memory) {
 			needsInit = true;
-			this.#memory = new WebAssembly.Memory({initial: 8, maximum: 32768, shared: true});
+			this.#memory = new WebAssembly.Memory(config.memorySpec
+				|| {initial: 8, maximum: 32768, shared: true});
 			if (globalThis.crossOriginIsolated) config.memory = this.#memory;
 		}
 		
