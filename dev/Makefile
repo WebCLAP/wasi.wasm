@@ -1,3 +1,9 @@
+all: cmake
+	node make-bundled.cjs
+	# run all tests
+	find tests -iname \*.\*js -print0 | xargs -0L1 node
+	@echo "OK! :)"
+
 cmake: cmake-build
 	cmake --build cmake-build --target wasi --config Release
 

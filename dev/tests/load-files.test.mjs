@@ -1,9 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {startWasi as sourceStart} from '../wasi.mjs';
-import {startWasi as bundledStart} from '../wasi-bundled.mjs';
-const module=await WebAssembly.compile(await readFile(new URL('../wasi.wasm',import.meta.url)));
+import {startWasi as sourceStart} from '../../wasi.mjs';
+import {startWasi as bundledStart} from '../../wasi-bundled.mjs';
+const module=await WebAssembly.compile(await readFile(new URL('../../wasi.wasm',import.meta.url)));
 for(const [name,startWasi] of [['source',sourceStart],['bundled',bundledStart]]){
  for(const [kind,make] of [
   ['ArrayBuffer',()=>new Uint8Array([4,5]).buffer],
