@@ -159,7 +159,9 @@ class Wasi {
 	loadFiles(fileMap) {
 		for (let key in fileMap) {
 			let buffer = fileMap[key];
-			if (ArrayBuffer.isView(buffer)) buffer = buffer.buffer;
+			if (ArrayBuffer.isView(buffer)) {
+				buffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+			}
 
 			let ptr = this.#api.vfs_setPath(key.length);
 			let strBuffer = new Uint8Array(this.#memory.buffer, ptr);
